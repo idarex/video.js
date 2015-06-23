@@ -14,7 +14,7 @@
   "author": "Steve Heffernan",
   "scripts": {
     "test": "grunt test",
-    "postinstall": "grunt"
+    "postinstall": "node_modules/.bin/grunt"
   },
   "repository": {
     "type": "git",
