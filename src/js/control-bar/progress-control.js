@@ -62,13 +62,16 @@ vjs.SeekBar.prototype.createEl = function(){
 
 vjs.SeekBar.prototype.updateARIAAttributes = function(){
     // Allows for smooth scrubbing, when player can't keep up.
-    var time = (this.player_.scrubbing) ? this.player_.getCache().currentTime : this.player_.currentTime();
+    var time = (this.player_.scrubbing) ?
+      this.player_.getCache().currentTime + this.player_.getCache().timeBase :
+      this.player_.currentTime() + this.player_.currentTimeBase();
+
     this.el_.setAttribute('aria-valuenow',vjs.round(this.getPercent()*100, 2)); // machine readable value of progress bar (percentage complete)
     this.el_.setAttribute('aria-valuetext',vjs.formatTime(time, this.player_.duration())); // human readable value of progress bar (time complete)
 };
 
 vjs.SeekBar.prototype.getPercent = function(){
-  return this.player_.currentTime() / this.player_.duration();
+  return (this.player_.currentTime() + this.player_.currentTimeBase()) / this.player_.duration();
 };
 
 vjs.SeekBar.prototype.onMouseDown = function(event){
@@ -83,6 +86,36 @@ vjs.SeekBar.prototype.onMouseDown = function(event){
 
 vjs.SeekBar.prototype.onMouseMove = function(event){
   var newTime = this.calculateDistance(event) * this.player_.duration();
+
+  var volumes = this.player_.volumes();
+
+  if (volumes && volumes.length) {
+    var i = 0,
+        l = volumes.length,
+        volume;
+
+    var timeBase = 0;
+
+    for (;i < l; i++) {
+      volume = volumes[i];
+
+      timeBase += volume.seconds;
+
+      if (timeBase > newTime) {
+        break;
+      }
+    }
+
+    newTime = newTime - (timeBase - volume.seconds);
+
+    if (i !== this.player_.currentVolume()) {
+      timeBase = this.player_.calculateTimeBase(i);
+
+      this.player_.updateTimeBase(timeBase);
+
+      this.player_.loadVolume(i);
+    }
+  }
 
   // Don't let video end while scrubbing.
   if (newTime == this.player_.duration()) { newTime = newTime - 0.1; }

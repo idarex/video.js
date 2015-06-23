@@ -740,7 +740,7 @@ vjs.Player.prototype.duration = function(seconds){
  * @return {Number} The time remaining in seconds
  */
 vjs.Player.prototype.remainingTime = function(){
-  return this.duration() - this.currentTime();
+  return this.duration() - this.currentTime() - this.currentTimeBase();
 };
 
 // http://dev.w3.org/html5/spec/video.html#dom-media-buffered
@@ -767,6 +767,7 @@ vjs.Player.prototype.remainingTime = function(){
  *
  * @return {Object} A mock TimeRange object (following HTML spec)
  */
+
 vjs.Player.prototype.buffered = function(){
   var buffered = this.techGet('buffered');
 
@@ -776,6 +777,113 @@ vjs.Player.prototype.buffered = function(){
 
   return buffered;
 };
+
+vjs.Player.prototype.updateTimeBase = function(time) {
+  if (time !== undefined) {
+    this.cache_.timeBase = time;
+  }
+};
+
+vjs.Player.prototype.currentTimeBase = function() {
+  return this.cache_.timeBase || 0;
+};
+
+vjs.Player.prototype.currentVolume = function() {
+  return this.cache_.volumeIndex || 0;
+};
+
+vjs.Player.prototype.updateVolumeIndex = function(index) {
+  if (index !== undefined) {
+    this.cache_.volumeIndex = index;
+  }
+};
+
+vjs.Player.prototype.volumes = function(volumes) {
+  if (volumes !== undefined) {
+    this.cache_.volumes = volumes;
+  }
+
+  return this.cache_.volumes || [];
+};
+
+vjs.Player.prototype.totalTime = function(time) {
+  if (time !== undefined) {
+    this.cache_.totalTime = time;
+  }
+
+  return this.cache_.totalTime || 0;
+};
+
+vjs.playVolume.prototype.initVolumes = function() {
+  var self = this;
+
+  this.updateTimeBase(0);
+
+  this.on('ended', function() {
+    var index = self.currentVolume(),
+        volumes = self.volumes(),
+        volumeLength = volumes.length;
+
+    if (index < volumeLength - 1) {
+      self.playVolume(index + 1);
+    } else {
+      // reset volume index;
+      self.updateVolumeIndex(0);
+
+      self.src({
+        src: volumes[0].src,
+        type: volumes[0].type
+      });
+
+      self.updateTimeBase(0);
+    }
+  });
+
+  this.on('loadedmetadata', function() {
+    self.duration(self.totalTime());
+  });
+};
+
+vjs.playVolume.prototype.playVolume = function(index) {
+  index = index || 0;
+
+  this.loadVolume(index);
+
+  this.play();
+};
+
+vjs.percent.prototype.calculateTimeBase = function(index) {
+  var time = 0,
+      volumes = this.volumes();
+
+  for (var i = 0; i < index; i++) {
+    time += volumes[i].seconds;
+  }
+
+  return time;
+};
+
+vjs.percent.prototype.loadVolume = function(index) {
+  index = index || 0;
+
+  this.updateVolumeIndex(index);
+
+  var volume = this.volumes()[index];
+
+  if (index >= 1) {
+    var timeBase = this.calculateTimeBase(index);
+
+    this.updateTimeBase(timeBase);
+  }
+
+  this.src({
+    src: volume.src,
+    type: volume.type
+  });
+
+  this.load();
+};
+
 
 /**
  * Get the percent (as a decimal) of the video that's been downloaded

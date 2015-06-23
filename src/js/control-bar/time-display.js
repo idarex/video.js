@@ -30,7 +30,10 @@ vjs.CurrentTimeDisplay.prototype.createEl = function(){
 
 vjs.CurrentTimeDisplay.prototype.updateContent = function(){
   // Allows for smooth scrubbing, when player can't keep up.
-  var time = (this.player_.scrubbing) ? this.player_.getCache().currentTime : this.player_.currentTime();
+  var time = (this.player_.scrubbing) ?
+    this.player_.getCache().currentTime + this.player_.getCache().timeBase :
+    this.player_.currentTime() + this.player_.currentTimeBase();
+
   this.contentEl_.innerHTML = '<span class="vjs-control-text">' + this.localize('Current Time') + '</span> ' + vjs.formatTime(time, this.player_.duration());
 };
 
