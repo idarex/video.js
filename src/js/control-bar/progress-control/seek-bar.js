@@ -57,34 +57,36 @@ class SeekBar extends Slider {
 
     let volumes = this.player_.volumes();
 
-    let i = 0,
-        l = volumes.length,
-        volume;
+    if (volumes && volumes.length) {
+      let i = 0,
+          l = volumes.length,
+          volume;
 
-    let timeBase = 0;
+      let timeBase = 0;
 
-    for (;i < l; i++) {
-      volume = volumes[i];
+      for (;i < l; i++) {
+        volume = volumes[i];
 
-      timeBase += volume.seconds;
+        timeBase += volume.seconds;
 
-      if (timeBase > newTime) {
-        break;
+        if (timeBase > newTime) {
+          break;
+        }
+      }
+
+      newTime = newTime - (timeBase - volume.seconds);
+
+      if (i !== this.player_.currentVolume()) {
+        let timeBase = this.player_.calculateTimeBase(i);
+
+        this.player_.updateTimeBase(timeBase);
+
+        this.player_.loadVolume(i);
       }
     }
 
-    newTime = newTime - (timeBase - volume.seconds);
-
     // Don't let video end while scrubbing.
     if (newTime === this.player_.duration()) { newTime = newTime - 0.1; }
-
-    if (i !== this.player_.currentVolume()) {
-      let timeBase = this.player_.calculateTimeBase(i);
-
-      this.player_.updateTimeBase(timeBase);
-
-      this.player_.loadVolume(i);
-    }
 
     // Set new time (tell player to seek to new time)
     this.player_.currentTime(newTime);
