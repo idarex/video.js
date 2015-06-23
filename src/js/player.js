@@ -814,7 +814,7 @@ vjs.Player.prototype.totalTime = function(time) {
   return this.cache_.totalTime || 0;
 };
 
-vjs.playVolume.prototype.initVolumes = function() {
+vjs.Player.prototype.initVolumes = function() {
   var self = this;
 
   this.updateTimeBase(0);
@@ -844,7 +844,7 @@ vjs.playVolume.prototype.initVolumes = function() {
   });
 };
 
-vjs.playVolume.prototype.playVolume = function(index) {
+vjs.Player.prototype.playVolume = function(index) {
   index = index || 0;
 
   this.loadVolume(index);
@@ -852,7 +852,7 @@ vjs.playVolume.prototype.playVolume = function(index) {
   this.play();
 };
 
-vjs.percent.prototype.calculateTimeBase = function(index) {
+vjs.Player.prototype.calculateTimeBase = function(index) {
   var time = 0,
       volumes = this.volumes();
 
@@ -863,7 +863,7 @@ vjs.percent.prototype.calculateTimeBase = function(index) {
   return time;
 };
 
-vjs.percent.prototype.loadVolume = function(index) {
+vjs.Player.prototype.loadVolume = function(index) {
   index = index || 0;
 
   this.updateVolumeIndex(index);
