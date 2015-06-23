@@ -13,7 +13,8 @@
   "homepage": "http://videojs.com",
   "author": "Steve Heffernan",
   "scripts": {
-    "test": "grunt test"
+    "test": "grunt test",
+    "postinstall": "grunt"
   },
   "repository": {
     "type": "git",
