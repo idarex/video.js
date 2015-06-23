@@ -30,13 +30,16 @@ class SeekBar extends Slider {
 
   updateARIAAttributes() {
       // Allows for smooth scrubbing, when player can't keep up.
-      let time = (this.player_.scrubbing()) ? this.player_.getCache().currentTime : this.player_.currentTime();
-      this.el_.setAttribute('aria-valuenow', roundFloat(this.getPercent()*100, 2)); // machine readable value of progress bar (percentage complete)
-      this.el_.setAttribute('aria-valuetext', formatTime(time, this.player_.duration())); // human readable value of progress bar (time complete)
+    let time = (this.player_.scrubbing()) ?
+      this.player_.getCache().currentTime + this.player_.getCache().timeBase:
+      this.player_.currentTime() + this.player_.currentTimeBase();
+
+    this.el_.setAttribute('aria-valuenow', roundFloat(this.getPercent()*100, 2)); // machine readable value of progress bar (percentage complete)
+    this.el_.setAttribute('aria-valuetext', formatTime(time, this.player_.duration())); // human readable value of progress bar (time complete)
   }
 
   getPercent() {
-    let percent = this.player_.currentTime() / this.player_.duration();
+    let percent = (this.player_.currentTime() + this.player_.currentTimeBase()) / this.player_.duration();
     return percent >= 1 ? 1 : percent;
   }
 
@@ -52,8 +55,36 @@ class SeekBar extends Slider {
   handleMouseMove(event) {
     let newTime = this.calculateDistance(event) * this.player_.duration();
 
+    let volumes = this.player_.volumes();
+
+    let i = 0,
+        l = volumes.length,
+        volume;
+
+    let timeBase = 0;
+
+    for (;i < l; i++) {
+      volume = volumes[i];
+
+      timeBase += volume.seconds;
+
+      if (timeBase > newTime) {
+        break;
+      }
+    }
+
+    newTime = newTime - (timeBase - volume.seconds);
+
     // Don't let video end while scrubbing.
     if (newTime === this.player_.duration()) { newTime = newTime - 0.1; }
+
+    if (i !== this.player_.currentVolume()) {
+      let timeBase = this.player_.calculateTimeBase(i);
+
+      this.player_.updateTimeBase(timeBase);
+
+      this.player_.loadVolume(i);
+    }
 
     // Set new time (tell player to seek to new time)
     this.player_.currentTime(newTime);

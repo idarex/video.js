@@ -1116,6 +1116,107 @@ class Player extends Component {
     return this.cache_.duration || 0;
   }
 
+
+  updateTimeBase(time) {
+    if (time !== undefined) {
+      this.cache_.timeBase = time;
+    }
+  }
+
+  currentTimeBase() {
+    return this.cache_.timeBase || 0;
+  }
+
+  currentVolume() {
+    return this.cache_.volumeIndex || 0;
+  }
+
+  updateVolumeIndex(index) {
+    if (index !== undefined) {
+      this.cache_.volumeIndex = index;
+    }
+  }
+
+  volumes(volumes) {
+    if (volumes !== undefined) {
+      this.cache_.volumes = volumes;
+    }
+
+    return this.cache_.volumes || [];
+  }
+
+  totalTime(time) {
+    if (time !== undefined) {
+      this.cache_.totalTime = time;
+    }
+
+    return this.cache_.totalTime || 0;
+  }
+
+  initVolumes() {
+    this.updateTimeBase(0);
+
+    this.on('ended', () => {
+      let index = this.currentVolume(),
+          volumes = this.volumes(),
+          volumeLength = volumes.length;
+
+      if (index < volumeLength - 1) {
+        this.playVolume(index + 1);
+      } else {
+        // reset volume index;
+        this.updateVolumeIndex(0);
+
+        this.src({
+          src: volumes[0].src,
+          type: volumes[0].type
+        });
+
+        this.updateTimeBase(0);
+      }
+    });
+
+    this.on('loadedmetadata', () => {
+      this.duration(this.totalTime());
+    });
+  }
+
+  playVolume(index = 0) {
+    this.loadVolume(index);
+
+    this.play();
+  }
+
+  calculateTimeBase(index) {
+    let time = 0,
+        volumes = this.volumes();
+
+    for (let i = 0; i < index; i++) {
+      time += volumes[i].seconds;
+    }
+
+    return time;
+  }
+
+  loadVolume(index = 0) {
+    this.updateVolumeIndex(index);
+
+    let volume = this.volumes()[index];
+
+    if (index >= 1) {
+      let timeBase = this.calculateTimeBase(index);
+
+      this.updateTimeBase(timeBase);
+    }
+
+    this.src({
+      src: volume.src,
+      type: volume.type
+    });
+
+    this.load();
+  }
+
   /**
    * Calculates how much time is left.
    *
@@ -1125,7 +1226,7 @@ class Player extends Component {
    * @return {Number} The time remaining in seconds
    */
   remainingTime() {
-    return this.duration() - this.currentTime();
+    return this.duration() - this.currentTime() - this.currentTimeBase();
   }
 
   // http://dev.w3.org/html5/spec/video.html#dom-media-buffered
@@ -1191,7 +1292,7 @@ class Player extends Component {
       end = duration;
     }
 
-    return end;
+    return end + this.currentTimeBase();
   }
 
   /**
